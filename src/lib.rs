@@ -11,29 +11,31 @@
 //! adds an async one. To use another WebSocket library, implement the transport traits for it.
 //!
 //! ```no_run
-//! use rexrs::RexClient;
-//! use rexrs::api::{Layout, session, terminal::Write, BlockMethod};
+//! use rexrs::api::session::{Attach, Create, CreateInitialWindow, Destroy};
+//! use rexrs::api::terminal::Write;
+//! use rexrs::api::{BlockMethod, Layout};
+//! use rexrs::{ApiError, Error, RexClient};
 //!
 //! let mut client = RexClient::builder().name("my-tool").connect()?;
 //!
 //! let created = client.call(
-//!     session::Create::new()
+//!     Create::new()
 //!         .label("work")
-//!         .initial_windows([session::CreateInitialWindow::new().layout(Layout::shell())]),
+//!         .initial_windows([CreateInitialWindow::new().layout(Layout::shell())]),
 //! )?;
 //! let session_id = created.session_id;
 //! let block_id = created.initial_windows[0].block_ids[0].clone();
 //!
 //! // A connection must attach to a session before it can use it.
-//! client.call(session::Attach::new(&session_id))?;
+//! client.call(Attach::new(&session_id))?;
 //! client.call(Write::new("ls\n").on(&session_id, &block_id))?;
 //!
 //! // Errors from the server map to `ApiError` variants.
-//! match client.call(session::Destroy::new("session:missing")) {
-//!     Err(rexrs::Error::Api(rexrs::ApiError::SessionNotFound { .. })) => {}
+//! match client.call(Destroy::new("session:missing")) {
+//!     Err(Error::Api(ApiError::SessionNotFound { .. })) => {}
 //!     other => panic!("unexpected {other:?}"),
 //! }
-//! # Ok::<(), rexrs::Error>(())
+//! # Ok::<(), Error>(())
 //! ```
 
 pub mod api;

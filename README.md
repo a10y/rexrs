@@ -4,19 +4,21 @@ A typed Rust client for the [Rex](https://www.superlogical.com/rex) server's con
 
 ```rust
 use rexrs::RexClient;
-use rexrs::api::{BlockMethod, Layout, session, terminal};
+use rexrs::api::session::{Attach, Create, CreateInitialWindow};
+use rexrs::api::terminal::Write;
+use rexrs::api::{BlockMethod, Layout};
 
 let mut client = RexClient::builder().name("my-tool").connect()?;
 
 let created = client.call(
-    session::Create::new()
+    Create::new()
         .label("work")
-        .initial_windows([session::CreateInitialWindow::new().layout(Layout::shell())]),
+        .initial_windows([CreateInitialWindow::new().layout(Layout::shell())]),
 )?;
-client.call(session::Attach::new(&created.session_id))?;
+client.call(Attach::new(&created.session_id))?;
 
 let block_id = &created.initial_windows[0].block_ids[0];
-client.call(terminal::Write::new("ls\n").on(&created.session_id, block_id))?;
+client.call(Write::new("ls\n").on(&created.session_id, block_id))?;
 ```
 
 ## Transports

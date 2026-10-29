@@ -2,7 +2,9 @@
 
 use std::time::Duration;
 
-use rexrs::api::{self, BlockMethod, Layout, session, terminal};
+use rexrs::api::session::{Attach, Create, CreateInitialWindow, Destroy, View};
+use rexrs::api::terminal::{Format, Write};
+use rexrs::api::{API_REVISION, BlockMethod, Layout};
 use rexrs::{ApiError, AsyncRexClient, Error};
 
 #[tokio::test]
@@ -13,13 +15,13 @@ async fn async_session_round_trip() {
         .connect()
         .await
         .unwrap();
-    assert_eq!(client.welcome().api_revision, api::API_REVISION);
+    assert_eq!(client.welcome().api_revision, API_REVISION);
 
     let created = client
         .call(
-            session::Create::new()
+            Create::new()
                 .label(format!("rexrs-test-async-{}", std::process::id()))
-                .initial_windows([session::CreateInitialWindow::new().layout(Layout::shell())]),
+                .initial_windows([CreateInitialWindow::new().layout(Layout::shell())]),
         )
         .await
         .unwrap();
@@ -27,13 +29,13 @@ async fn async_session_round_trip() {
     let block_id = created.initial_windows[0].block_ids[0].clone();
 
     let result = async {
-        client.call(session::Attach::new(&session_id)).await?;
+        client.call(Attach::new(&session_id)).await?;
         client
-            .call(terminal::Write::new("echo rexrs-async\n").on(&session_id, &block_id))
+            .call(Write::new("echo rexrs-async\n").on(&session_id, &block_id))
             .await?;
         for _ in 0..100 {
             let screen = client
-                .call(terminal::Format::new().on(&session_id, &block_id))
+                .call(Format::new().on(&session_id, &block_id))
                 .await?;
             if screen.content.contains("rexrs-async") {
                 return Ok(());
@@ -44,10 +46,7 @@ async fn async_session_round_trip() {
     }
     .await;
 
-    client
-        .call(session::Destroy::new(&session_id))
-        .await
-        .unwrap();
+    client.call(Destroy::new(&session_id)).await.unwrap();
     // The session's own events, such as session_destroyed, arrived while we waited.
     assert!(
         client
@@ -56,7 +55,7 @@ async fn async_session_round_trip() {
     );
     result.unwrap();
 
-    let gone = client.call(session::View::new(&session_id)).await;
+    let gone = client.call(View::new(&session_id)).await;
     assert!(
         matches!(gone, Err(Error::Api(ApiError::SessionNotFound { .. }))),
         "{gone:?}"
